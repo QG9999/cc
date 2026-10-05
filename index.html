@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie Clicker Clone</title>
+    <style>
+        body { background: #4A82B3; color: #fff; font-family: Arial, sans-serif; text-align: center; margin: 0; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; overflow-x: hidden; }
+        #score-box { background: #A4C2DF; color: #1a2b3c; font-size: 36px; font-weight: bold; padding: 12px 35px; border-radius: 16px; margin-bottom: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        #stats-bar, #buff-bar { background: rgba(0,0,0,0.25); padding: 8px 18px; border-radius: 20px; font-size: 13px; font-weight: bold; margin-bottom: 10px; display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+        #buff-bar { background: rgba(0,0,0,0.4); font-size: 12px; margin-bottom: 15px; min-height: 20px; color: #ffd700; }
+        #cookie-btn { background: none; border: none; cursor: pointer; transition: transform 0.1s; margin-bottom: 15px; }
+        #cookie-btn:active { transform: scale(0.93); }
+        #cookie-btn img { width: 150px; height: 150px; filter: drop-shadow(0 8px 12px rgba(0,0,0,0.3)); }
+        #golden-cookie { display: none; position: fixed; width: 70px; height: 70px; cursor: pointer; z-index: 99999; animation: pulse 1s infinite alternate; filter: drop-shadow(0 0 14px #ffd700); }
+        @keyframes pulse { 0% { transform: scale(1); } 100% { transform: scale(1.15); } }
+        .game-panel { background: #fff; color: #333; width: 100%; max-width: 400px; border-radius: 16px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); overflow: hidden; text-align: left; margin-bottom: 20px; }
+        .tabs { background: #2D4A6E; display: flex; justify-content: space-around; padding: 6px; gap: 4px; }
+        .tab-btn { background: transparent; color: #b0c4de; border: none; padding: 10px 8px; cursor: pointer; font-size: 13px; font-weight: bold; flex: 1; border-radius: 8px; transition: 0.2s; }
+        .tab-btn.active { background: #fff; color: #1a2b3c; }
+        .tab-content { display: none; padding: 12px; background: #f4f7fa; min-height: 200px; }
+        .tab-content.active { display: block; }
+        .item-card { background: #e2e8f0; border-radius: 10px; padding: 10px 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid #cbd5e1; }
+        .item-card:hover { background: #cbd5e1; }
+        .item-info h4 { margin: 0 0 4px 0; font-size: 14px; color: #1e293b; }
+        .item-info p { margin: 0; font-size: 11px; color: #64748b; }
+        .item-action-badge { background: #cbd5e1; color: #1e293b; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: bold; border: none; cursor: pointer; }
+        .special-card { background: #c2410c; color: #fff; }
+        .special-card .item-info h4, .special-card .item-info p, .special-card .item-action-badge { color: #fff; background: #9a3412; }
+        .super-card { background: #7e22ce; color: #fff; }
+        .super-card .item-info h4, .super-card .item-info p, .super-card .item-action-badge { color: #fff; background: #581c87; }
+        .control-btns { margin-bottom: 10px; display: flex; gap: 10px; justify-content: center; }
+        .save-btn { background: #166534; color: #fff; border: none; padding: 6px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+        .wipe-btn { background: #7f1d1d; color: #fff; border: none; padding: 6px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div id="golden-cookie">
+        <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 100 100" style="pointer-events: none;">
+            <circle cx="50" cy="50" r="45" fill="#ffd700"/>
+            <circle cx="35" cy="35" r="6" fill="#cca300"/><circle cx="65" cy="45" r="5" fill="#cca300"/><circle cx="50" cy="65" r="7" fill="#cca300"/>
+        </svg>
+    </div>
+
+    <div id="score-box"><span id="score">0</span></div>
+    
+    <div id="stats-bar">
+        <span>Power: <span id="click-power-display">1</span></span> | 
+        <span>CPS: <span id="cps">0</span>/s</span> | 
+        <span>Rebirths: <span id="multiplier">1</span>x</span>
+        <span id="super-counter-container" style="display:none;"> | Super: <span id="super-multiplier">1</span>x</span>
+    </div>
+
+    <div id="buff-bar">No active buffs</div>
+
+    <div class="control-btns">
+        <button id="save-btn" class="save-btn">Save Game</button>
+        <button id="wipe-btn" class="wipe-btn">Wipe Save</button>
+    </div>
+
+    <button id="cookie-btn">
+        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23c68b59'/><circle cx='35' cy='35' r='7' fill='%235a3825'/><circle cx='65' cy='40' r='6' fill='%235a3825'/><circle cx='50' cy='65' r='8' fill='%235a3825'/><circle cx='70' cy='70' r='5' fill='%235a3825'/><circle cx='30' cy='65' r='6' fill='%235a3825'/></svg>" alt="Big Cookie">
+    </button>
+
+    <div class="game-panel">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('buildings', this)">Buildings</button>
+            <button class="tab-btn" onclick="switchTab('upgrades', this)">Upgrades</button>
+            <button class="tab-btn" onclick="switchTab('rebirth', this)">Rebirth</button>
+            <button class="tab-btn" onclick="switchTab('super-rebirth', this)">Super Rebirth</button>
+        </div>
+
+        <div id="buildings-tab" class="tab-content active">
+            <div class="item-card" onclick="buyAutoClicker()">
+                <div class="item-info"><h4>Auto-Clicker [<span id="auto-count">0</span>]</h4><p>CPS x1.6 Boost per buy</p></div>
+                <button class="item-action-badge"><span id="auto-cost">15</span></button>
+            </div>
+            <div class="item-card" onclick="buyClickUpgrade()">
+                <div class="item-info"><h4>Reinforced Finger [<span id="click-level">1</span>]</h4><p>Click Power x1.6 Boost per buy</p></div>
+                <button class="item-action-badge"><span id="click-upgrade-cost">50</span></button>
+            </div>
+            <div class="item-card special-card" onclick="sellAutoClickers()">
+                <div class="item-info"><h4>Sell 5 Auto-Clickers</h4><p>Refund last 5 buys + Golden Cookie</p></div>
+                <button class="item-action-badge">ACTION</button>
+            </div>
+        </div>
+
+        <div id="upgrades-tab" class="tab-content">
+            <div class="item-card" onclick="buyPins()">
+                <div class="item-info"><h4>Grandma's Rolling Pins [<span id="pins-level">0</span>]</h4><p>Tiered Milestone Boost</p></div>
+                <button class="item-action-badge"><span id="pins-cost">500</span></button>
+            </div>
+            <div class="item-card" onclick="buyClickMulti()">
+                <div class="item-info"><h4>Golden Gloves [<span id="click-multi-level">0</span>]</h4><p>Tiered Milestone Boost</p></div>
+                <button class="item-action-badge"><span id="click-multi-cost">500</span></button>
+            </div>
+            <div class="item-card" onclick="toggleGoldenSwitch()">
+                <div class="item-info"><h4>Golden Switch</h4><p>Status: <span id="switch-status">OFF</span> (+50% CPS)</p></div>
+                <button class="item-action-badge">TOGGLE</button>
+            </div>
+        </div>
+
+        <div id="rebirth-tab" class="tab-content">
+            <div class="item-card special-card" onclick="doStandardRebirth()">
+                <div class="item-info"><h4>Standard Rebirth</h4><p>Req: <span id="rebirth-cost-display">100M</span> cookies</p></div>
+                <button class="item-action-badge">x2</button>
+            </div>
+        </div>
+
+        <div id="super-rebirth-tab" class="tab-content">
+            <div class="item-card super-card" onclick="doSuperRebirth()">
+                <div class="item-info"><h4>Super Rebirth Nexus</h4><p>Req: <span id="super-rebirth-cost-display">1sx</span> cookies</p></div>
+                <button class="item-action-badge">x1,000</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let score = 0, clickLevel = 1, clickUpgradeCost = 50, autoCount = 0, autoCost = 15;
+        let multiplier = 1, superMultiplier = 1, pinsLevel = 0, pinsCost = 500, clickMultiLevel = 0, clickMultiCost = 500;
+        let rebirthCost = 1e8, superRebirthCost = 1e21; 
+        let goldenSwitchOn = false, goldenCookieTimer = null, activeBuffs = [];
+        const TRIGINTILLION = 1e93;
+        const suffixes = ["", "k", "m", "b", "t", "qa", "qi", "sx", "sp", "oc", "no", "dc", "ud", "dd", "td", "qad", "qid", "sxd", "spd", "ocd", "nod", "vg", "uvg", "dvg", "tvg", "qavg", "qivg", "sxvg", "spvg", "ocvg", "novg", "tg"];
+
+        function formatNum(num) {
+            if (isNaN(num)) return "0";
+            if (num >= TRIGINTILLION) return "1tg+";
+            if (num < 1000) return Math.floor(num).toLocaleString();
+            let i = 0, val = num;
+            while (val >= 1000 && i < suffixes.length - 1) { val /= 1000; i++; }
+            return val.toFixed(val >= 100 ? 0 : (val >= 10 ? 1 : 2)) + suffixes[i];
+        }
+
+        function getTierMultiplier(level) {
+            if (level <= 0) return 1;
+            let mult = 1;
+            if (level >= 1) mult *= Math.pow(2, Math.min(level, 10));
+            if (level >= 11) mult *= Math.pow(5, Math.min(level - 10, 10));
+            if (level >= 21) mult *= Math.pow(10, level - 20);
+            return mult;
+        }
+
+        const getMultiplierSum = () => activeBuffs.reduce((acc, b) => acc * b.multiplier, 1);
+        const getClickPower = () => (clickLevel === 1 ? 1 : Math.pow(1.6, clickLevel - 1)) * multiplier * superMultiplier * getTierMultiplier(clickMultiLevel) * getMultiplierSum();
+        const getCps = () => (autoCount === 0 ? 0 : Math.pow(1.6, autoCount - 1)) * getTierMultiplier(pinsLevel) * multiplier * superMultiplier * (goldenSwitchOn ? 1.5 : 1) * getMultiplierSum();
+
+        function updateDisplay() {
+            document.getElementById('score').innerText = formatNum(score);
+            document.getElementById('click-power-display').innerText = formatNum(getClickPower());
+            document.getElementById('cps').innerText = formatNum(getCps());
+            document.getElementById('multiplier').innerText = formatNum(multiplier);
+            document.getElementById('auto-count').innerText = formatNum(autoCount);
+            document.getElementById('auto-cost').innerText = autoCost >= TRIGINTILLION ? "MAX" : formatNum(autoCost);
+            document.getElementById('click-level').innerText = formatNum(clickLevel);
+            document.getElementById('click-upgrade-cost').innerText = clickUpgradeCost >= TRIGINTILLION ? "MAX" : formatNum(clickUpgradeCost);
+            document.getElementById('pins-level').innerText = formatNum(pinsLevel);
+            document.getElementById('pins-cost').innerText = pinsCost >= TRIGINTILLION ? "MAX" : formatNum(pinsCost);
+            document.getElementById('click-multi-level').innerText = formatNum(clickMultiLevel);
+            document.getElementById('click-multi-cost').innerText = clickMultiCost >= TRIGINTILLION ? "MAX" : formatNum(clickMultiCost);
+            document.getElementById('rebirth-cost-display').innerText = formatNum(rebirthCost);
+            document.getElementById('super-rebirth-cost-display').innerText = superRebirthCost >= TRIGINTILLION ? "MAX" : formatNum(superRebirthCost);
+            document.getElementById('switch-status').innerText = goldenSwitchOn ? "ON" : "OFF";
+            
+            let superContainer = document.getElementById('super-counter-container');
+            superContainer.style.display = superMultiplier > 1 ? 'inline' : 'none';
+            if (superMultiplier > 1) document.getElementById('super-multiplier').innerText = formatNum(superMultiplier);
+
+            const now = Date.now();
+            document.getElementById('buff-bar').innerText = activeBuffs.length ? activeBuffs.map(b => {
+                let timeLeftSec = Math.max(0, Math.ceil((b.expireTime - now) / 1000));
+                return `${b.name} (${timeLeftSec}s)`;
+            }).join(' | ') : "No active buffs";
+        }
+
+        document.getElementById('cookie-btn').onclick = () => { score += getClickPower(); updateDisplay(); };
+
+        function buyAutoClicker() {
+            if (autoCost >= TRIGINTILLION) return alert("Max upgrade limit reached!");
+            if (score >= autoCost) { score -= autoCost; autoCount++; autoCost = Math.floor(autoCost * 2.3); updateDisplay(); }
+        }
+
+        function buyClickUpgrade() {
+            if (clickUpgradeCost >= TRIGINTILLION) return alert("Max upgrade limit reached!");
+            if (score >= clickUpgradeCost) { score -= clickUpgradeCost; clickLevel++; clickUpgradeCost = Math.floor(clickUpgradeCost * 2.3); updateDisplay(); }
+        }
+
+        function buyPins() {
+            if (pinsCost >= TRIGINTILLION) return alert("Max upgrade limit reached!");
+            if (score >= pinsCost) { score -= pinsCost; pinsLevel++; pinsCost = Math.floor(pinsCost * 50); updateDisplay(); }
+        }
+
+        function buyClickMulti() {
+            if (clickMultiCost >= TRIGINTILLION) return alert("Max upgrade limit reached!");
+            if (score >= clickMultiCost) { score -= clickMultiCost; clickMultiLevel++; clickMultiCost = Math.floor(clickMultiCost * 50); updateDisplay(); }
+        }
+
+        function sellAutoClickers() {
+            if (autoCount < 5) return alert("You need at least 5 Auto-Clickers to sacrifice!");
+            let refundTotal = 0, tempCost = autoCost;
+            for (let i = 0; i < 5; i++) { tempCost = Math.round(tempCost / 2.3); refundTotal += tempCost; }
+            autoCount -= 5; autoCost = tempCost; score += refundTotal;
+            spawnGoldenCookie(); updateDisplay();
+            alert(`Sacrificed 5 Auto-Clickers and refunded ${formatNum(refundTotal)} cookies!`);
+        }
+
+        function toggleGoldenSwitch() {
+            goldenSwitchOn = !goldenSwitchOn;
+            if (!goldenSwitchOn) spawnGoldenCookie();
+            updateDisplay();
+        }
+
+        function resetProgress() {
+            score = 0; clickLevel = 1; clickUpgradeCost = 50;
+            autoCount = 0; autoCost = 15; pinsLevel = 0; pinsCost = 500;
+            clickMultiLevel = 0; clickMultiCost = 500; goldenSwitchOn = false; activeBuffs = [];
+        }
+
+        function doStandardRebirth() {
+            if (score >= rebirthCost) {
+                multiplier *= 2;
+                rebirthCost = Math.floor(rebirthCost * 50);
+                resetProgress();
+                updateDisplay();
+                alert('Standard Rebirth Successful! Buildings and upgrades have been reset.');
+            } else {
+                alert(`You need ${formatNum(rebirthCost)} cookies to rebirth.`);
+            }
+        }
+
+        function doSuperRebirth() {
+            if (score >= superRebirthCost) {
+                superMultiplier *= 1000;
+                multiplier = 1;
+                superRebirthCost *= 1e18;
+                resetProgress();
+                updateDisplay();
+                alert('Super Rebirth Nexus Achieved! Everything has been reset, and you gained a permanent 1,000x multiplier!');
+            } else {
+                alert(`You need ${formatNum(superRebirthCost)} cookies for Super Rebirth.`);
+            }
+        }
+
+        document.getElementById('save-btn').onclick = () => {
+            localStorage.setItem('cookieCloneSave', JSON.stringify({ score, clickLevel, clickUpgradeCost, autoCount, autoCost, multiplier, superMultiplier, pinsLevel, pinsCost, clickMultiLevel, clickMultiCost, rebirthCost, superRebirthCost, goldenSwitchOn }));
+            alert('Game Saved Successfully!');
+        };
+
+        document.getElementById('wipe-btn').onclick = () => {
+            if (confirm('Are you sure you want to wipe your save?')) { localStorage.removeItem('cookieCloneSave'); location.reload(); }
+        };
+
+        window.onload = () => {
+            try {
+                let data = JSON.parse(localStorage.getItem('cookieCloneSave'));
+                if (data) ({ score, clickLevel, clickUpgradeCost, autoCount, autoCost, multiplier, superMultiplier, pinsLevel, pinsCost, clickMultiLevel, clickMultiCost, rebirthCost = 1e8, superRebirthCost = 1e21, goldenSwitchOn } = data);
+            } catch (e) {}
+            updateDisplay(); scheduleGoldenCookie();
+        };
+
+        setInterval(() => {
+            let c = getCps();
+            if (c > 0) score += c / 100;
+            
+            const now = Date.now();
+            if (activeBuffs.length > 0) {
+                for (let i = activeBuffs.length - 1; i >= 0; i--) {
+                    if (now >= activeBuffs[i].expireTime) activeBuffs.splice(i, 1);
+                }
+            }
+            updateDisplay();
+        }, 10);
+
+        const gc = document.getElementById('golden-cookie');
+        gc.onclick = (e) => {
+            e.stopPropagation();
+            let roll = Math.random() * 100;
+            const now = Date.now();
+            if (roll < 40) activeBuffs.push({ name: 'Frenzy (x7 All)', multiplier: 7, expireTime: now + 180000 }), alert('Frenzy! All production x7 for 3 minutes!');
+            else if (roll < 44) activeBuffs.push({ name: 'Click Frenzy (x777 Click)', multiplier: 777, expireTime: now + 25000 }), alert('Click Frenzy! Click power x777 for 25 seconds!');
+            else if (roll < 50) activeBuffs.push({ name: 'Dragonflight (x1223 Click)', multiplier: 1223, expireTime: now + 20000 }), alert('Dragonflight! Click power x1223 for 20 seconds!');
+            else if (roll < 56) activeBuffs.push({ name: 'Elder Frenzy (x666 All)', multiplier: 666, expireTime: now + 10000 }), alert('Elder Frenzy! All production x666 for 10 seconds!');
+            else if (roll < 66) activeBuffs.push({ name: 'Clot (Half All)', multiplier: 0.5, expireTime: now + 120000 }), alert('Clot! All production halved for 2 minutes.');
+            else if (roll < 67) activeBuffs.push({ name: 'Bad Time (/8 All)', multiplier: 0.125, expireTime: now + 30000 }), alert('Bad time... All production divided by 8 for 30 seconds.');
+            else {
+                let reward = Math.max(getCps() * (roll < 82 ? 900 : 30), 100) + (roll >= 82 ? 50 : 0);
+                score += reward; alert(`Golden Cookie! Rewarded with ${formatNum(reward)} cookies!`);
+            }
+            gc.style.display = 'none'; updateDisplay();
+        };
+
+        function scheduleGoldenCookie() {
+            if (goldenCookieTimer) clearTimeout(goldenCookieTimer);
+            goldenCookieTimer = setTimeout(spawnGoldenCookie, 120000);
+        }
+
+        function spawnGoldenCookie() {
+            if (gc.style.display !== 'block') {
+                gc.style.left = Math.max(20, Math.random() * (window.innerWidth - 90)) + 'px';
+                gc.style.top = Math.max(20, Math.random() * (window.innerHeight - 90)) + 'px';
+                gc.style.display = 'block';
+                setTimeout(() => { if (gc.style.display === 'block') gc.style.display = 'none'; }, 15000);
+            }
+            scheduleGoldenCookie();
+        }
+
+        function switchTab(name, btn) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(name + '-tab').classList.add('active');
+            btn.classList.add('active');
+        }
+    </script>
+</body>
+</html>
+
